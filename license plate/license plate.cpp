@@ -53,85 +53,36 @@ public:
 class ContourWithData {
 public:
 	// member variables ///////////////////////////////////////////////////////////////////////////
-	std::vector<cv::Point> ptContour;          
-	cv::Rect boundingRect;                   
-	float fltArea;                            
+	std::vector<cv::Point> ptContour;           // contour
+	cv::Rect boundingRect;                      // bounding rect for contour
+	float fltArea;                              // area of contour
 
 												///////////////////////////////////////////////////////////////////////////////////////////////
-	bool checkIfContourIsValid() {                            
-		if (fltArea < MIN_CONTOUR_AREA) return false;       
-		return true;                                           
+	bool checkIfContourIsValid() {                              // obviously in a production grade program
+		if (fltArea < MIN_CONTOUR_AREA) return false;           // we would have a much more robust function for 
+		return true;                                            // identifying if a contour is valid !!
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
-	static bool sortByBoundingRectXPosition(const ContourWithData& cwdLeft, const ContourWithData& cwdRight) {      
-		return(cwdLeft.boundingRect.x < cwdRight.boundingRect.x);                                                   
+	static bool sortByBoundingRectXPosition(const ContourWithData& cwdLeft, const ContourWithData& cwdRight) {      // this function allows us to sort
+		return(cwdLeft.boundingRect.x < cwdRight.boundingRect.x);                                                   // the contours from left to right
 	}
 
 };
 
 
-void knn(Mat & img)
+void SVM_digirs(Mat & img)
 {
 
-	std::vector<ContourWithData> allContoursWithData;          
-	std::vector<ContourWithData> validContoursWithData;        
+	Ptr<SVM> svm = Algorithm::load<SVM>("SVM.xml");
 
-																 ///////////////////////////////////////////////////
+	Mat img2 = img.reshape(1, 1);
 
-	cv::Mat matClassificationInts;      
+	img2.convertTo(img2, CV_32FC1);
 
-	cv::FileStorage fsClassifications("license plate_classifications.xml", cv::FileStorage::READ);      
+	char ret = svm->predict(img2);
 
-
-
-	fsClassifications["classifications"] >> matClassificationInts;      
-	fsClassifications.release();                                       
-
-																		////////////////////////////////////////////////////////////
-
-	cv::Mat matTrainingImagesAsFlattenedFloats;        
-
-	cv::FileStorage fsTrainingImages("license plate_new_images.xml", cv::FileStorage::READ);         
-
-
-
-	fsTrainingImages["images"] >> matTrainingImagesAsFlattenedFloats;          
-	fsTrainingImages.release();                                                 
-
-																				//////////////////////////////////////////////////////////////////////////////
-
-	cv::Ptr<cv::ml::KNearest>  kNearest(cv::ml::KNearest::create());          
-
-																				
-																				
-	kNearest->train(matTrainingImagesAsFlattenedFloats, cv::ml::ROW_SAMPLE, matClassificationInts);
-
-
-
-	std::string strFinalString;
-	cv::Mat matROIResized;
-
-	cv::resize(img, matROIResized, cv::Size(RESIZED_IMAGE_WIDTH, RESIZED_IMAGE_HEIGHT));    
-
-	cv::Mat matROIFloat;
-	matROIResized.convertTo(matROIFloat, CV_32FC1);            
-
-	cv::Mat matROIFlattenedFloat = matROIFloat.reshape(1, 1);
-
-	cv::Mat matCurrentChar(0, 0, CV_32F);
-
-	kNearest->findNearest(matROIFlattenedFloat, 1, matCurrentChar);    
-
-	float fltCurrentChar = (float)matCurrentChar.at<float>(0, 0);
-
-	strFinalString = strFinalString + char(int(fltCurrentChar));      
-
-
-																	
-	char *cstr = &strFinalString[0u];
-
-	digits.push_back(*cstr);
+	digits.push_back(ret);
 
 
 }
@@ -223,23 +174,23 @@ void imagecolor(Mat& roi, Mat& image)
 
 
 
-		imshow("d1", d1);
-		imwrite("d1.jpg", d1);
+		//imshow("d1", d1);
+		//imwrite("d1.jpg", d1);
 
 
-		knn(d1);
-		knn(d2);
-		knn(d3);
-		knn(d4);
-		knn(d5);
-		knn(d6);
-		knn(d7);
+		SVM_digirs(d1);
+		SVM_digirs(d2);
+		SVM_digirs(d3);
+		SVM_digirs(d4);
+		SVM_digirs(d5);
+		SVM_digirs(d6);
+		SVM_digirs(d7);
 
 	}
 
 	imshow("imagecolor", cc);
 
-	cout << "車牌辨識結果: ";
+	cout << "車牌辨識結果:";
 
 	vector<char>  ::iterator iter = digits.begin();
 	for (int ix = 0; iter != digits.end(); ++iter, ++ix) {
@@ -280,11 +231,11 @@ int main(int argc, char** argv)
 {
 
 
-	Mat src = imread("L1.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+	Mat src = imread("L3.png", CV_LOAD_IMAGE_GRAYSCALE);
 
-	Mat img = imread("L1.jpg");
+	Mat img = imread("L3.png");
 
-	Mat image = imread("L1.jpg");
+	Mat image = imread("L3.png");
 
 	Mat dst, grad_x, His;
 
